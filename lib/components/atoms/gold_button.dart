@@ -9,13 +9,13 @@ class GoldButton extends StatelessWidget {
   final double? width;
 
   const GoldButton({
-    Key? key,
+    super.key,
     required this.label,
     required this.onPressed,
     this.isLoading = false,
     this.icon,
     this.width,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +51,7 @@ class GoldButton extends StatelessWidget {
     final buttonStyle = ElevatedButton.styleFrom(
       backgroundColor: AppTheme.primaryGold,
       foregroundColor: Colors.black,
-      disabledBackgroundColor: AppTheme.primaryGold.withOpacity(0.5),
+      disabledBackgroundColor: AppTheme.primaryGold.withValues(alpha: 0.5),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(30),
       ),

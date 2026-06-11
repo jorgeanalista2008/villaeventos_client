@@ -22,9 +22,7 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
     _fetchOrders();
   }
 
-  /**
-   * Fetch customer order history
-   */
+  /// Fetch customer order history
   Future<void> _fetchOrders() async {
     setState(() {
       _isLoading = true;
@@ -179,7 +177,7 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: _getOrderStatusColor(orderStatus).withOpacity(0.15),
+                                        color: _getOrderStatusColor(orderStatus).withValues(alpha: 0.15),
                                         borderRadius: BorderRadius.circular(20),
                                         border: Border.all(color: _getOrderStatusColor(orderStatus)),
                                       ),
@@ -291,7 +289,7 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
                                                 Container(
                                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                                   decoration: BoxDecoration(
-                                                    color: _getItemStatusColor(itemStatus).withOpacity(0.1),
+                                                    color: _getItemStatusColor(itemStatus).withValues(alpha: 0.1),
                                                     borderRadius: BorderRadius.circular(4),
                                                   ),
                                                   child: Row(
@@ -323,7 +321,7 @@ class _OrderStatusPageState extends State<OrderStatusPage> {
                                               ],
                                             ),
                                           );
-                                        }).toList(),
+                                         }),
                                       ],
                                     ),
                                   ),

@@ -12,14 +12,14 @@ class DishCard extends StatelessWidget {
   final int? disponibles;
 
   const DishCard({
-    Key? key,
+    super.key,
     required this.id,
     required this.nombre,
     required this.descripcion,
     required this.precio,
     required this.imagen,
     required this.disponibles,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

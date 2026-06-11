@@ -36,9 +36,7 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
     super.dispose();
   }
 
-  /**
-   * Fetch menu catalog from REST API
-   */
+  /// Fetch menu catalog from REST API
   Future<void> _loadMenuData() async {
     setState(() {
       _isLoadingMenu = true;
@@ -60,9 +58,7 @@ class _MenuPageState extends State<MenuPage> with SingleTickerProviderStateMixin
     }
   }
 
-  /**
-   * Opens checkout delivery cart bottom sheet
-   */
+  /// Opens checkout delivery cart bottom sheet
   void _openCartBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -284,7 +280,7 @@ class _CartBottomSheetContentState extends State<_CartBottomSheetContent> {
       }
 
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
 
       if (!mounted) return;
@@ -436,7 +432,7 @@ class _CartBottomSheetContentState extends State<_CartBottomSheetContent> {
                             ),
                           ),
                         );
-                      }).toList(),
+                      }),
 
                       const SizedBox(height: 15),
                       const Text(
@@ -544,7 +540,7 @@ class _CartBottomSheetContentState extends State<_CartBottomSheetContent> {
 
                       // Dropdown payment method
                       DropdownButtonFormField<String>(
-                        value: cart.pagoMetodo,
+                        initialValue: cart.pagoMetodo,
                         dropdownColor: AppTheme.darkCard,
                         decoration: const InputDecoration(labelText: "Método de Pago"),
                         items: const [
@@ -663,6 +659,7 @@ class _CartBottomSheetContentState extends State<_CartBottomSheetContent> {
                   onPressed: () async {
                     if (_formKey.currentState!.validate()) {
                       final result = await cart.submitOrder();
+                      if (!context.mounted) return;
                       Navigator.pop(context); // close sheet
                       
                       if (result['success']) {

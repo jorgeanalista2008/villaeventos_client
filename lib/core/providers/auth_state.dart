@@ -14,9 +14,7 @@ class AuthState extends ChangeNotifier {
     checkSession();
   }
 
-  /**
-   * Recovers client session on app startup if a valid JWT token exists
-   */
+  /// Recovers client session on app startup if a valid JWT token exists
   Future<void> checkSession() async {
     _isLoading = true;
     notifyListeners();
@@ -42,9 +40,7 @@ class AuthState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /**
-   * Client authentication
-   */
+  /// Client authentication
   Future<Map<String, dynamic>> login(String email, String password) async {
     _isLoading = true;
     notifyListeners();
@@ -60,9 +56,7 @@ class AuthState extends ChangeNotifier {
     return result;
   }
 
-  /**
-   * Client registration
-   */
+  /// Client registration
   Future<Map<String, dynamic>> register({
     required String nombre,
     required String telefono,
@@ -92,9 +86,7 @@ class AuthState extends ChangeNotifier {
     return result;
   }
 
-  /**
-   * Clears auth token and profiles
-   */
+  /// Clears auth token and profiles
   Future<void> logout() async {
     await ApiService.clearSession();
     _isAuthenticated = false;

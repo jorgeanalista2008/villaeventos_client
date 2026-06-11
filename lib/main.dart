@@ -3,8 +3,7 @@ import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/providers/auth_state.dart';
 import 'core/providers/cart_state.dart';
-import 'pages/login_page.dart';
-import 'pages/menu_page.dart';
+import 'pages/splash_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,20 +27,7 @@ class MyApp extends StatelessWidget {
       title: 'Villa Eventos Delivery',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: Consumer<AuthState>(
-        builder: (context, auth, child) {
-          if (auth.isLoading) {
-            return const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(
-                  color: AppTheme.primaryGold,
-                ),
-              ),
-            );
-          }
-          return auth.isAuthenticated ? const MenuPage() : const LoginPage();
-        },
-      ),
+      home: const SplashPage(),
     );
   }
 }

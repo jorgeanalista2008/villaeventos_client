@@ -5,9 +5,9 @@ class Loader extends StatelessWidget {
   final String? message;
 
   const Loader({
-    Key? key,
+    super.key,
     this.message,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

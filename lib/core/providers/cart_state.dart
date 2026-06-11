@@ -128,9 +128,7 @@ class CartState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /**
-   * Calculates delivery fee based on GPS distance
-   */
+  /// Calculates delivery fee based on GPS distance
   void calculateDeliveryFee() {
     if (_metodo == 'retirar') {
       _costoDelivery = 0.00;
@@ -221,9 +219,7 @@ class CartState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /**
-   * Submit delivery order to backend REST API
-   */
+  /// Submit delivery order to backend REST API
   Future<Map<String, dynamic>> submitOrder() async {
     if (_items.isEmpty) {
       return {"success": false, "message": "El carrito está vacío."};

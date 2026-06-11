@@ -38,9 +38,7 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  /**
-   * Requests location permissions and fetches current GPS coordinates
-   */
+  /// Requests location permissions and fetches current GPS coordinates
   Future<void> _fetchGPSLocation() async {
     setState(() {
       _isFetchingGPS = true;
@@ -65,7 +63,7 @@ class _RegisterPageState extends State<RegisterPage> {
       }
 
       final Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
 
       setState(() {
@@ -303,11 +301,12 @@ class _RegisterPageState extends State<RegisterPage> {
                             longitud: _lngController.text.trim(),
                             notas: _notasController.text.trim(),
                           );
+                          if (!context.mounted) return;
 
                           if (result['success']) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text("¡Registro exitoso! Por favor, inicie sesión."),
+                              const SnackBar(
+                                content: Text("¡Registro exitoso! Por favor, inicie sesión."),
                                 backgroundColor: AppTheme.successGreen,
                               ),
                             );

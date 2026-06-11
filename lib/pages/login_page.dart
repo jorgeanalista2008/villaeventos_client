@@ -67,7 +67,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   onPressed: () async {
                     await ApiService.setBaseUrl("https://www.villaeventos.com/api/index.php");
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -99,7 +99,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   onPressed: () async {
                     await ApiService.setBaseUrl("http://10.0.2.2:8081/villaeventos_master/api/index.php");
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -131,7 +131,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   onPressed: () async {
                     await ApiService.setBaseUrl("http://localhost:8081/villaeventos_master/api/index.php");
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -191,7 +191,7 @@ class _LoginPageState extends State<LoginPage> {
                 final input = customUrlController.text.trim();
                 if (input.isNotEmpty) {
                   await ApiService.setBaseUrl(input);
-                  if (!mounted) return;
+                  if (!context.mounted) return;
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -234,7 +234,7 @@ class _LoginPageState extends State<LoginPage> {
                           border: Border.all(color: AppTheme.primaryGold, width: 2),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.primaryGold.withOpacity(0.15),
+                              color: AppTheme.primaryGold.withValues(alpha: 0.15),
                               blurRadius: 15,
                               spreadRadius: 2,
                             ),
@@ -349,6 +349,7 @@ class _LoginPageState extends State<LoginPage> {
                                 final email = _emailController.text.trim();
                                 final pass = _passwordController.text.trim();
                                 final result = await auth.login(email, pass);
+                                if (!context.mounted) return;
 
                                 if (result['success']) {
                                   // Sync client saved delivery coordinates with the CartState provider

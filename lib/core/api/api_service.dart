@@ -11,59 +11,45 @@ class ApiService {
   // Default Base URL fallback (Production)
   static String get defaultBaseUrl => "https://www.villaeventos.com/api/index.php";
 
-  /**
-   * Returns current configured Base URL
-   */
+  /// Returns current configured Base URL
   static Future<String> getBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_apiBaseUrlKey) ?? defaultBaseUrl;
   }
 
-  /**
-   * Set custom Base URL (useful for physical device testing in different LAN networks)
-   */
+  /// Set custom Base URL (useful for physical device testing in different LAN networks)
   static Future<void> setBaseUrl(String url) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_apiBaseUrlKey, url);
   }
 
-  /**
-   * Save auth token and table ID locally
-   */
+  /// Save auth token and table ID locally
   static Future<void> saveSession(String token, int mesaId) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);
     await prefs.setInt(_mesaIdKey, mesaId);
   }
 
-  /**
-   * Clear local session (logout)
-   */
+  /// Clear local session (logout)
   static Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_mesaIdKey);
   }
 
-  /**
-   * Retrieve current stored token
-   */
+  /// Retrieve current stored token
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_tokenKey);
   }
 
-  /**
-   * Retrieve current stored table ID
-   */
+  /// Retrieve current stored table ID
   static Future<int?> getMesaId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_mesaIdKey);
   }
 
-  /**
-   * 1. Authentication (POST /api/index.php?route=auth-mesa)
-   */
+  /// 1. Authentication (POST /api/index.php?route=auth-mesa)
   static Future<Map<String, dynamic>> authenticateTable(int mesaId) async {
     final baseUrl = await getBaseUrl();
     final url = Uri.parse("$baseUrl?route=auth-mesa");
@@ -87,9 +73,7 @@ class ApiService {
     }
   }
 
-  /**
-   * 2. Get Menu (GET /api/index.php?route=menu) - Public
-   */
+  /// 2. Get Menu (GET /api/index.php?route=menu) - Public
   static Future<List<dynamic>?> getMenu() async {
     final baseUrl = await getBaseUrl();
     final url = Uri.parse("$baseUrl?route=menu");
@@ -108,9 +92,7 @@ class ApiService {
     }
   }
 
-  /**
-   * 3. Verify Table (GET /api/index.php?route=mesa-verificar) - Secured
-   */
+  /// 3. Verify Table (GET /api/index.php?route=mesa-verificar) - Secured
   static Future<Map<String, dynamic>?> verificarMesa() async {
     final baseUrl = await getBaseUrl();
     final url = Uri.parse("$baseUrl?route=mesa-verificar");
@@ -139,9 +121,7 @@ class ApiService {
     }
   }
 
-  /**
-   * 4. Submit Order (POST /api/index.php?route=pedido) - Secured
-   */
+  /// 4. Submit Order (POST /api/index.php?route=pedido) - Secured
   static Future<Map<String, dynamic>> submitOrder({
     required List<Map<String, dynamic>> items,
     String comentario = "",
@@ -184,9 +164,7 @@ class ApiService {
     }
   }
 
-  /**
-   * 5. Get Order Status (GET /api/index.php?route=pedido-estado) - Secured
-   */
+  /// 5. Get Order Status (GET /api/index.php?route=pedido-estado) - Secured
   static Future<List<dynamic>?> getActiveOrders() async {
     final baseUrl = await getBaseUrl();
     final url = Uri.parse("$baseUrl?route=pedido-estado");
@@ -215,17 +193,13 @@ class ApiService {
     }
   }
 
-  /**
-   * Save auth token locally (for customers, no table ID needed)
-   */
+  /// Save auth token locally (for customers, no table ID needed)
   static Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);
   }
 
-  /**
-   * Customer Registration (POST /api/index.php?route=cliente-registro)
-   */
+  /// Customer Registration (POST /api/index.php?route=cliente-registro)
   static Future<Map<String, dynamic>> registerClient({
     required String nombre,
     required String telefono,
@@ -267,9 +241,7 @@ class ApiService {
     }
   }
 
-  /**
-   * Customer Authentication (POST /api/index.php?route=cliente-login)
-   */
+  /// Customer Authentication (POST /api/index.php?route=cliente-login)
   static Future<Map<String, dynamic>> loginClient(String email, String password) async {
     final baseUrl = await getBaseUrl();
     final url = Uri.parse("$baseUrl?route=cliente-login");
@@ -293,9 +265,7 @@ class ApiService {
     }
   }
 
-  /**
-   * Customer Profile (GET /api/index.php?route=cliente-perfil)
-   */
+  /// Customer Profile (GET /api/index.php?route=cliente-perfil)
   static Future<Map<String, dynamic>> getClientProfile() async {
     final baseUrl = await getBaseUrl();
     final url = Uri.parse("$baseUrl?route=cliente-perfil");
@@ -324,9 +294,7 @@ class ApiService {
     }
   }
 
-  /**
-   * Submit Customer Delivery Order (POST /api/index.php?route=cliente-pedido)
-   */
+  /// Submit Customer Delivery Order (POST /api/index.php?route=cliente-pedido)
   static Future<Map<String, dynamic>> submitClientOrder({
     required String metodo,
     required String telefono,
@@ -389,9 +357,7 @@ class ApiService {
     }
   }
 
-  /**
-   * Get Customer Orders History (GET /api/index.php?route=cliente-pedidos)
-   */
+  /// Get Customer Orders History (GET /api/index.php?route=cliente-pedidos)
   static Future<List<dynamic>?> getClientOrders() async {
     final baseUrl = await getBaseUrl();
     final url = Uri.parse("$baseUrl?route=cliente-pedidos");
