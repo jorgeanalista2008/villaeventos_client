@@ -27,6 +27,13 @@ Esta aplicación se conecta con la API REST del backend administrativo desarroll
   - Soporte para métodos tradicionales de pago local: **Pago Móvil** (emisor, referencia, monto), **Transferencia Bancaria** y **Efectivo** al momento de la entrega.
 * **Historial y Seguimiento de Pedidos:**
   - Vista integrada para monitorear el estado actual de las órdenes activas en la cocina (Pendiente, En Preparación, Entregado, Cancelado).
+* **Módulo de Tarjeta VIP (Fidelidad):**
+  - Registro y solicitud de membresía VIP con un costo de apertura de \$15.00 en saldo inicial.
+  - Diseño de tarjeta virtual dorada con visualización de código de barras/código, saldo en tiempo real y estado.
+  - Carga y reporte bancario de recargas directas a la tarjeta digital.
+  - Listado histórico de transacciones y movimientos VIP (aperturas, recargas y consumos).
+* **Recuperación de Contraseña en 3 Pasos:**
+  - Flujo de restablecimiento público de contraseña: Enviar solicitud de código SMTP -> Verificar código OTP de 6 dígitos -> Registrar nueva contraseña de acceso.
 
 ---
 
@@ -38,6 +45,7 @@ Esta aplicación se conecta con la API REST del backend administrativo desarroll
 * **Geolocalización:** `geolocator`
 * **Almacenamiento Local (Sesión):** `shared_preferences`
 * **Peticiones HTTP:** `http`
+* **Tipografía Dinámica:** `google_fonts` (Cinzel e Inter)
 * **Estilos y Diseño:** Tema oscuro premium personalizado (Dorado `#DAB203` y Carbón `#121212`) con tipografías `Cinzel` e `Inter`.
 
 ---
@@ -61,7 +69,9 @@ lib/
 │   ├── order_status_page.dart
 │   ├── profile_page.dart
 │   ├── register_page.dart
-│   └── splash_page.dart
+│   ├── splash_page.dart
+│   ├── vip_card_page.dart
+│   └── forgot_password_page.dart
 └── main.dart           # Punto de inicio (Inicializa proveedores y carga el Splash)
 ```
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // 🔑 Color Palette Tokens (Villa Eventos Theme)
@@ -29,14 +30,13 @@ class AppTheme {
           side: const BorderSide(color: Color(0xFF333333), width: 1),
         ),
       ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF1A1A1A),
+      appBarTheme: AppBarTheme(
+        backgroundColor: const Color(0xFF1A1A1A),
         elevation: 0,
         centerTitle: true,
-        iconTheme: IconThemeData(color: primaryGold),
-        titleTextStyle: TextStyle(
+        iconTheme: const IconThemeData(color: primaryGold),
+        titleTextStyle: GoogleFonts.cinzel(
           color: textLight,
-          fontFamily: 'Cinzel',
           fontSize: 20,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
@@ -46,8 +46,7 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryGold,
           foregroundColor: Colors.black,
-          textStyle: const TextStyle(
-            fontFamily: 'Inter',
+          textStyle: GoogleFonts.inter(
             fontWeight: FontWeight.bold,
           ),
           shape: RoundedRectangleBorder(
@@ -59,8 +58,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: primaryGold,
-          textStyle: const TextStyle(
-            fontFamily: 'Inter',
+          textStyle: GoogleFonts.inter(
             fontWeight: FontWeight.w600,
           ),
         ),

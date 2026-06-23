@@ -42,7 +42,7 @@ class DishCard extends StatelessWidget {
                 width: 110,
                 height: 110,
                 child: Image.network(
-                  imagen,
+                  imagen.replaceAll('/admin/storage/archivos/storage/archivos/', '/admin/storage/archivos/'),
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(

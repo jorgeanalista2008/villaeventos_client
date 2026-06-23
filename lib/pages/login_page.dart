@@ -3,9 +3,11 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../core/providers/auth_state.dart';
 import '../core/providers/cart_state.dart';
-import '../core/api/api_service.dart';
 import '../components/atoms/gold_button.dart';
 import 'register_page.dart';
+import 'menu_page.dart';
+import 'forgot_password_page.dart';
+import '../core/api/api_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -209,6 +211,8 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -224,32 +228,35 @@ class _LoginPageState extends State<LoginPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // Logo
-                      Container(
-                        width: 110,
-                        height: 110,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppTheme.darkCard,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppTheme.primaryGold, width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.primaryGold.withValues(alpha: 0.15),
-                              blurRadius: 15,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: Image.asset(
-                          'assets/logo.png',
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Icon(
-                              Icons.restaurant,
-                              color: AppTheme.primaryGold,
-                              size: 55,
-                            );
-                          },
+                       GestureDetector(
+                        onLongPress: _showSettingsDialog,
+                        child: Container(
+                          width: 110,
+                          height: 110,
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppTheme.darkCard,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppTheme.primaryGold, width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.primaryGold.withValues(alpha: 0.15),
+                                blurRadius: 15,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: Image.asset(
+                            'assets/logo.png',
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(
+                                Icons.restaurant,
+                                color: AppTheme.primaryGold,
+                                size: 55,
+                              );
+                            },
+                          ),
                         ),
                       ),
                       const SizedBox(height: 25),
@@ -335,7 +342,23 @@ class _LoginPageState extends State<LoginPage> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 25),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
+                            );
+                          },
+                          child: const Text(
+                            "¿Olvidaste tu contraseña?",
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 15),
 
                       // Submit button
                       Consumer<AuthState>(
@@ -360,6 +383,11 @@ class _LoginPageState extends State<LoginPage> {
                                       content: Text("¡Bienvenido, ${result['data']['nombre']}!"),
                                       backgroundColor: AppTheme.successGreen,
                                     ),
+                                  );
+
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const MenuPage()),
                                   );
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -400,15 +428,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             ),
-            Positioned(
-              top: 15,
-              right: 15,
-              child: IconButton(
-                icon: const Icon(Icons.settings, color: AppTheme.primaryGold, size: 28),
-                onPressed: _showSettingsDialog,
-                tooltip: "Configurar Servidor API",
-              ),
-            ),
+
           ],
         ),
       ),

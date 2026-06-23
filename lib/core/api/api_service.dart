@@ -385,5 +385,198 @@ class ApiService {
       return null;
     }
   }
+
+  /// Request a New VIP Card (POST /api/index.php?route=cliente-solicitar-vip)
+  static Future<Map<String, dynamic>> solicitarTarjetaVip({
+    required String pagoMetodo,
+    required String pagoBanco,
+    required String pagoReferencia,
+    required double pagoMonto,
+    String nota = "",
+  }) async {
+    final baseUrl = await getBaseUrl();
+    final url = Uri.parse("$baseUrl?route=cliente-solicitar-vip");
+    final token = await getToken();
+
+    if (token == null) {
+      return {"success": false, "message": "Sesión expirada. Inicie sesión."};
+    }
+
+    final payload = {
+      "pago_metodo": pagoMetodo,
+      "pago_banco": pagoBanco,
+      "pago_referencia": pagoReferencia,
+      "pago_monto": pagoMonto,
+      "nota": nota
+    };
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token"
+        },
+        body: jsonEncode(payload),
+      );
+
+      final result = jsonDecode(response.body);
+      if (response.statusCode == 200 && result['status'] == 'success') {
+        return {
+          "success": true,
+          "message": result['message'],
+          "id_pedido": result['data']['id_pedido'],
+          "total": result['data']['total']
+        };
+      }
+      return {"success": false, "message": result['message'] ?? "Error al solicitar tarjeta VIP."};
+    } catch (e) {
+      return {"success": false, "message": "Error de conexión: $e"};
+    }
+  }
+
+  /// Get VIP Card Transactions History (GET /api/index.php?route=cliente-vip-movimientos)
+  static Future<List<dynamic>?> getMovimientosVip() async {
+    final baseUrl = await getBaseUrl();
+    final url = Uri.parse("$baseUrl?route=cliente-vip-movimientos");
+    final token = await getToken();
+
+    if (token == null) return null;
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token"
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        if (result['status'] == 'success') {
+          return result['data'];
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Report Payment to Recharge VIP Card (POST /api/index.php?route=cliente-vip-recargar)
+  static Future<Map<String, dynamic>> recargarTarjetaVip({
+    required String pagoMetodo,
+    required String pagoBanco,
+    required String pagoReferencia,
+    required double pagoMonto,
+    String nota = "",
+  }) async {
+    final baseUrl = await getBaseUrl();
+    final url = Uri.parse("$baseUrl?route=cliente-vip-recargar");
+    final token = await getToken();
+
+    if (token == null) {
+      return {"success": false, "message": "Sesión expirada. Inicie sesión."};
+    }
+
+    final payload = {
+      "pago_metodo": pagoMetodo,
+      "pago_banco": pagoBanco,
+      "pago_referencia": pagoReferencia,
+      "pago_monto": pagoMonto,
+      "nota": nota
+    };
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token"
+        },
+        body: jsonEncode(payload),
+      );
+
+      final result = jsonDecode(response.body);
+      if (response.statusCode == 200 && result['status'] == 'success') {
+        return {
+          "success": true,
+          "message": result['message'],
+          "id_pedido": result['data']['id_pedido'],
+          "total": result['data']['total']
+        };
+      }
+      return {"success": false, "message": result['message'] ?? "Error al recargar tarjeta VIP."};
+    } catch (e) {
+      return {"success": false, "message": "Error de conexión: $e"};
+    }
+  }
+
+  /// Request Password Recovery Code (POST /api/index.php?route=cliente-recuperar-solicitar)
+  static Future<Map<String, dynamic>> solicitarCodigoRecuperacion(String email) async {
+    final baseUrl = await getBaseUrl();
+    final url = Uri.parse("$baseUrl?route=cliente-recuperar-solicitar");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"email": email}),
+      );
+
+      final result = jsonDecode(response.body);
+      if (response.statusCode == 200 && result['status'] == 'success') {
+        return {"success": true, "message": result['message']};
+      }
+      return {"success": false, "message": result['message'] ?? "Error al solicitar código."};
+    } catch (e) {
+      return {"success": false, "message": "Error de conexión: $e"};
+    }
+  }
+
+  /// Verify Password Recovery Code (POST /api/index.php?route=cliente-recuperar-verificar)
+  static Future<Map<String, dynamic>> verificarCodigoRecuperacion(String email, String code) async {
+    final baseUrl = await getBaseUrl();
+    final url = Uri.parse("$baseUrl?route=cliente-recuperar-verificar");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"email": email, "code": code}),
+      );
+
+      final result = jsonDecode(response.body);
+      if (response.statusCode == 200 && result['status'] == 'success') {
+        return {"success": true, "message": result['message']};
+      }
+      return {"success": false, "message": result['message'] ?? "Código de verificación incorrecto."};
+    } catch (e) {
+      return {"success": false, "message": "Error de conexión: $e"};
+    }
+  }
+
+  /// Reset Password (POST /api/index.php?route=cliente-recuperar-restablecer)
+  static Future<Map<String, dynamic>> restablecerContrasena(String email, String code, String password) async {
+    final baseUrl = await getBaseUrl();
+    final url = Uri.parse("$baseUrl?route=cliente-recuperar-restablecer");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"email": email, "code": code, "password": password}),
+      );
+
+      final result = jsonDecode(response.body);
+      if (response.statusCode == 200 && result['status'] == 'success') {
+        return {"success": true, "message": result['message']};
+      }
+      return {"success": false, "message": result['message'] ?? "Error al restablecer la contraseña."};
+    } catch (e) {
+      return {"success": false, "message": "Error de conexión: $e"};
+    }
+  }
 }
 

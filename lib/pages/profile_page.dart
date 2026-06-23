@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../core/providers/auth_state.dart';
 import '../core/providers/cart_state.dart';
 import '../components/atoms/gold_button.dart';
+import 'vip_card_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -68,6 +70,8 @@ class ProfilePage extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 20),
+              _buildVipSectionCard(context, profile),
               const SizedBox(height: 25),
 
               const Text(
@@ -131,11 +135,14 @@ class ProfilePage extends StatelessWidget {
                             child: const Text("Cancelar"),
                           ),
                           TextButton(
-                            onPressed: () {
+                            onPressed: () async {
                               Navigator.pop(context); // close dialog
                               Navigator.pop(context); // close profile page
-                              authState.logout();
-                              Provider.of<CartState>(context, listen: false).clearCart();
+                              await authState.logout();
+                              if (context.mounted) {
+                                Provider.of<CartState>(context, listen: false).clearCart();
+                              }
+                              await SystemNavigator.pop();
                             },
                             child: const Text("Cerrar Sesión", style: TextStyle(color: AppTheme.alertRed)),
                           ),
@@ -181,6 +188,63 @@ class ProfilePage extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+  Widget _buildVipSectionCard(BuildContext context, Map<String, dynamic> profile) {
+    final vipCard = profile['tarjeta_vip'];
+    final bool hasPending = profile['tiene_vip_pendiente'] == true;
+    final bool hasVip = vipCard != null;
+
+    IconData cardIcon = Icons.card_membership;
+    String cardTitle = "Obtener Tarjeta VIP";
+    String cardSubtitle = "Únete al club de fidelidad y acumula saldo";
+    Color borderColor = const Color(0xFF333333);
+
+    if (hasVip) {
+      cardIcon = Icons.credit_card;
+      final double cardBalance = double.tryParse(vipCard['saldo']?.toString() ?? '0') ?? 0.00;
+      cardTitle = "Tarjeta VIP Activa";
+      cardSubtitle = "Saldo: \$${cardBalance.toStringAsFixed(2)} • Código: ${vipCard['codigo']}";
+      borderColor = AppTheme.primaryGold;
+    } else if (hasPending) {
+      cardIcon = Icons.hourglass_empty;
+      cardTitle = "Tarjeta VIP (En Conciliación)";
+      cardSubtitle = "Verificando su reporte de pago...";
+      borderColor = AppTheme.primaryGold.withValues(alpha: 0.5);
+    }
+
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: borderColor, width: hasVip || hasPending ? 1.5 : 1),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: CircleAvatar(
+          backgroundColor: (hasVip || hasPending)
+              ? AppTheme.primaryGold.withValues(alpha: 0.15)
+              : const Color(0xFF262626),
+          child: Icon(cardIcon, color: (hasVip || hasPending) ? AppTheme.primaryGold : Colors.grey),
+        ),
+        title: Text(
+          cardTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4.0),
+          child: Text(
+            cardSubtitle,
+            style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+          ),
+        ),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: AppTheme.primaryGold),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const VipCardPage()),
+          );
+        },
       ),
     );
   }

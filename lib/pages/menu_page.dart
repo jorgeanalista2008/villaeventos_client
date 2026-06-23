@@ -229,6 +229,29 @@ class _CartBottomSheetContent extends StatefulWidget {
 }
 
 class _CartBottomSheetContentState extends State<_CartBottomSheetContent> {
+  static const Map<String, String> _bancosVenezuela = {
+    "Banco de Venezuela": "Banco de Venezuela (BDV)",
+    "Banesco": "Banesco",
+    "Banco Mercantil": "Banco Mercantil",
+    "BBVA Provincial": "BBVA Provincial",
+    "Bancamiga": "Bancamiga",
+    "Banco Nacional de Crédito": "Banco Nacional de Crédito (BNC)",
+    "Banco Bicentenario": "Banco Bicentenario",
+    "Banplus": "Banplus",
+    "Banco del Tesoro": "Banco del Tesoro",
+    "Banco Exterior": "Banco Exterior",
+    "Banco Fondo Común": "Banco Fondo Común (BFC)",
+    "Banco Caroní": "Banco Caroní",
+    "Banco Plaza": "Banco Plaza",
+    "100% Banco": "100% Banco",
+    "Banco Venezolano de Crédito": "Banco Venezolano de Crédito",
+    "Banco Activo": "Banco Activo",
+    "Del Sur Banco Universal": "Del Sur Banco Universal",
+    "Mi Banco": "Mi Banco",
+    "Bancrecer": "Bancrecer",
+    "Otro / Zelle / Internacional": "Otro / Zelle / Internacional",
+  };
+
   final _formKey = GlobalKey<FormState>();
   bool _isLocating = false;
 
@@ -236,7 +259,6 @@ class _CartBottomSheetContentState extends State<_CartBottomSheetContent> {
   late TextEditingController _direccionCtrl;
   late TextEditingController _notaCtrl;
 
-  late TextEditingController _bancoCtrl;
   late TextEditingController _referenciaCtrl;
   late TextEditingController _montoCtrl;
 
@@ -248,7 +270,6 @@ class _CartBottomSheetContentState extends State<_CartBottomSheetContent> {
     _direccionCtrl = TextEditingController(text: cart.direccion);
     _notaCtrl = TextEditingController(text: cart.nota);
 
-    _bancoCtrl = TextEditingController(text: cart.pagoBanco);
     _referenciaCtrl = TextEditingController(text: cart.pagoReferencia);
     _montoCtrl = TextEditingController(text: cart.pagoMonto);
   }
@@ -258,7 +279,6 @@ class _CartBottomSheetContentState extends State<_CartBottomSheetContent> {
     _telefonoCtrl.dispose();
     _direccionCtrl.dispose();
     _notaCtrl.dispose();
-    _bancoCtrl.dispose();
     _referenciaCtrl.dispose();
     _montoCtrl.dispose();
     super.dispose();
@@ -271,12 +291,20 @@ class _CartBottomSheetContentState extends State<_CartBottomSheetContent> {
 
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) throw 'Servicio de ubicación desactivado.';
+      if (!serviceEnabled) {
+        throw 'Los servicios de ubicación están desactivados en su dispositivo.';
+      }
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) throw 'Permiso denegado.';
+        if (permission == LocationPermission.denied) {
+          throw 'Permiso de ubicación denegado.';
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        throw 'Los permisos de ubicación están denegados permanentemente.';
       }
 
       final position = await Geolocator.getCurrentPosition(
@@ -555,13 +583,22 @@ class _CartBottomSheetContentState extends State<_CartBottomSheetContent> {
                       const SizedBox(height: 10),
 
                       if (cart.pagoMetodo != 'efectivo') ...[
-                        TextFormField(
-                          controller: _bancoCtrl,
+                        DropdownButtonFormField<String>(
+                          initialValue: _bancosVenezuela.containsKey(cart.pagoBanco) ? cart.pagoBanco : null,
+                          dropdownColor: AppTheme.darkCard,
                           decoration: const InputDecoration(labelText: "Banco emisor / origen *"),
-                          onChanged: (val) => cart.setPagoBanco(val),
+                          items: _bancosVenezuela.entries.map((entry) {
+                            return DropdownMenuItem<String>(
+                              value: entry.key,
+                              child: Text(entry.value),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) cart.setPagoBanco(val);
+                          },
                           validator: (value) {
-                            if (cart.pagoMetodo != 'efectivo' && (value == null || value.trim().isEmpty)) {
-                              return "Ingrese el banco.";
+                            if (cart.pagoMetodo != 'efectivo' && (value == null || value.isEmpty)) {
+                              return "Seleccione el banco.";
                             }
                             return null;
                           },
@@ -658,11 +695,21 @@ class _CartBottomSheetContentState extends State<_CartBottomSheetContent> {
                   isLoading: cart.isLoading,
                   onPressed: () async {
                     if (_formKey.currentState!.validate()) {
+                      if (cart.metodo == 'delivery' && (cart.latitud.isEmpty || cart.longitud.isEmpty)) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Debe obtener su ubicación GPS antes de enviar el pedido."),
+                            backgroundColor: AppTheme.alertRed,
+                          ),
+                        );
+                        return;
+                      }
+
                       final result = await cart.submitOrder();
                       if (!context.mounted) return;
-                      Navigator.pop(context); // close sheet
                       
                       if (result['success']) {
+                        Navigator.pop(context); // close sheet
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text("¡Pedido #${result['id_pedido']} recibido con éxito! En verificación."),
