@@ -29,7 +29,8 @@ Esta aplicación se conecta con la API REST del backend administrativo desarroll
   - Vista integrada para monitorear el estado actual de las órdenes activas en la cocina (Pendiente, En Preparación, Entregado, Cancelado).
 * **Módulo de Tarjeta VIP (Fidelidad):**
   - Registro y solicitud de membresía VIP con un costo de apertura de \$15.00 en saldo inicial.
-  - Diseño de tarjeta virtual dorada con visualización de código de barras/código, saldo en tiempo real y estado.
+  - Diseño de tarjeta virtual premium de fidelidad replicando el mockup del diseñador (patrón de diamantes oscuros, logo VE en recuadro dorado, franja inferior dorada con nombre del portador y código QR superpuesto).
+  - Regla de recarga de \$50+: Si el cliente realiza una recarga de \$50.00 o más, recibe un bono automático del 20% de saldo adicional (ej: \$50.00 de recarga otorga \$60.00 de crédito final). Vista previa y cálculo en tiempo real integrado directamente en el formulario de recarga.
   - Carga y reporte bancario de recargas directas a la tarjeta digital.
   - Listado histórico de transacciones y movimientos VIP (aperturas, recargas y consumos).
 * **Recuperación de Contraseña en 3 Pasos:**
