@@ -323,7 +323,11 @@ class _VipCardPageState extends State<VipCardPage> {
             ],
           ),
         ),
-       /// Builds the 3D-effect looking golden virtual membership card
+      ),
+    );
+  }
+
+  /// Builds the 3D-effect looking golden virtual membership card
   Widget _buildVirtualCard({
     required dynamic vipCard,
     required bool hasPending,
@@ -352,7 +356,7 @@ class _VipCardPageState extends State<VipCardPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withValues(alpha: 0.4),
             blurRadius: 15,
             spreadRadius: 2,
             offset: const Offset(0, 8),
@@ -596,7 +600,7 @@ class _VipCardPageState extends State<VipCardPage> {
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
+                      color: Colors.black.withValues(alpha: 0.3),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -915,7 +919,7 @@ class DiamondGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.04)
+      ..color = Colors.white.withValues(alpha: 0.04)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
