@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/theme/app_theme.dart';
 import '../core/providers/auth_state.dart';
 import '../core/api/api_service.dart';
@@ -18,6 +19,7 @@ class _VipCardPageState extends State<VipCardPage> {
   bool _isLoadingHistory = false;
   List<dynamic> _movements = [];
   String? _errorMessage;
+  String? _pendingRechargeMsg;
 
   static const Map<String, String> _bancosVenezuela = {
     "Banco de Venezuela": "Banco de Venezuela (BDV)",
@@ -45,10 +47,61 @@ class _VipCardPageState extends State<VipCardPage> {
   @override
   void initState() {
     super.initState();
+    _initData();
+  }
+
+  Future<void> _loadPendingRechargeMsg() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _pendingRechargeMsg = prefs.getString('pending_vip_recharge_msg');
+      });
+    }
+  }
+
+  Future<void> _savePendingRechargeMsg(String msg) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('pending_vip_recharge_msg', msg);
+    if (mounted) {
+      setState(() {
+        _pendingRechargeMsg = msg;
+      });
+    }
+  }
+
+  Future<void> _clearPendingRechargeMsg() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('pending_vip_recharge_msg');
+    if (mounted) {
+      setState(() {
+        _pendingRechargeMsg = null;
+      });
+    }
+  }
+
+  Future<void> _initData() async {
+    // 1. Load any locally stored pending recharge messages first
+    await _loadPendingRechargeMsg();
+    if (!mounted) return;
+
+    // 2. If we already have cached VIP card data, load movements immediately
     final authState = Provider.of<AuthState>(context, listen: false);
-    final hasVip = authState.profile?['tarjeta_vip'] != null;
-    if (hasVip) {
+    final hasVipCached = authState.profile?['tarjeta_vip'] != null;
+    if (hasVipCached) {
       _loadMovements();
+    }
+
+    // 3. Fetch the latest user profile/VIP state from the backend to ensure data is fresh
+    try {
+      await _refreshProfile();
+      if (mounted) {
+        final hasVipLatest = Provider.of<AuthState>(context, listen: false).profile?['tarjeta_vip'] != null;
+        if (hasVipLatest) {
+          _loadMovements();
+        }
+      }
+    } catch (_) {
+      // Ignore background refresh errors on startup to not disrupt UX
     }
   }
 
@@ -76,7 +129,20 @@ class _VipCardPageState extends State<VipCardPage> {
 
   Future<void> _refreshProfile() async {
     final auth = Provider.of<AuthState>(context, listen: false);
+    final double oldBalance = auth.profile?['tarjeta_vip'] != null
+        ? (double.tryParse(auth.profile?['tarjeta_vip']?['saldo']?.toString() ?? '0') ?? 0.00)
+        : 0.00;
+
     await auth.checkSession();
+
+    final double newBalance = auth.profile?['tarjeta_vip'] != null
+        ? (double.tryParse(auth.profile?['tarjeta_vip']?['saldo']?.toString() ?? '0') ?? 0.00)
+        : 0.00;
+
+    // If balance changed, clear any pending recharge message automatically
+    if (newBalance != oldBalance) {
+      await _clearPendingRechargeMsg();
+    }
   }
 
   /// Opens dialog to submit VIP application or Balance Recharge
@@ -84,13 +150,16 @@ class _VipCardPageState extends State<VipCardPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
+      builder: (dialogContext) {
         return _PaymentReportDialog(
           isRecharge: isRecharge,
           bancosVenezuela: _bancosVenezuela,
-          onSuccess: () async {
+          onSuccess: (isRech, amount) async {
+            if (isRech) {
+              await _savePendingRechargeMsg("Hemos recibido su reporte de recarga por \$${amount.toStringAsFixed(2)}. Su saldo se actualizará una vez conciliado el pago.");
+            }
             await _refreshProfile();
-            if (!context.mounted) return;
+            if (!mounted) return;
             final hasVip = Provider.of<AuthState>(context, listen: false).profile?['tarjeta_vip'] != null;
             if (hasVip) {
               _loadMovements();
@@ -134,6 +203,52 @@ class _VipCardPageState extends State<VipCardPage> {
                 clientName: profile['nombre'] ?? 'Cliente VIP',
               ),
               const SizedBox(height: 25),
+
+              // Pending Recharge Message Banner
+              if (_pendingRechargeMsg != null && hasVip) ...[
+                Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: AppTheme.successGreen.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.successGreen, width: 0.8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle_outline, color: AppTheme.successGreen, size: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Procesando Recarga",
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.successGreen,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _pendingRechargeMsg!,
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white60, size: 20),
+                        onPressed: _clearPendingRechargeMsg,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
 
               // 2. VIP CONDITIONAL ACTIONS
               if (!hasVip && !hasPending) ...[
@@ -653,7 +768,7 @@ class _VipCardPageState extends State<VipCardPage> {
 class _PaymentReportDialog extends StatefulWidget {
   final bool isRecharge;
   final Map<String, String> bancosVenezuela;
-  final VoidCallback onSuccess;
+  final Function(bool isRecharge, double amount) onSuccess;
 
   const _PaymentReportDialog({
     required this.isRecharge,
@@ -731,7 +846,7 @@ class _PaymentReportDialogState extends State<_PaymentReportDialog> {
           backgroundColor: AppTheme.successGreen,
         ),
       );
-      widget.onSuccess();
+      widget.onSuccess(widget.isRecharge, amount);
     } else {
       setState(() {
         _isLoadingSubmit = false;
@@ -748,6 +863,7 @@ class _PaymentReportDialogState extends State<_PaymentReportDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      scrollable: true,
       backgroundColor: AppTheme.darkCard,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
@@ -757,137 +873,141 @@ class _PaymentReportDialogState extends State<_PaymentReportDialog> {
         widget.isRecharge ? "Reportar Recarga VIP" : "Solicitud Tarjeta VIP",
         style: GoogleFonts.cinzel(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
       ),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                "Reporta tu transacción bancaria para acreditar el saldo.",
-                style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
-              ),
-              const SizedBox(height: 15),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              "Reporta tu transacción bancaria para acreditar el saldo.",
+              style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+            ),
+            const SizedBox(height: 15),
 
-              // Payment Method
+            // Payment Method
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              initialValue: _pagoMetodo,
+              dropdownColor: AppTheme.darkCard,
+              decoration: const InputDecoration(labelText: "Método de Pago"),
+              items: const [
+                DropdownMenuItem(value: "pago_movil", child: Text("Pago Móvil")),
+                DropdownMenuItem(value: "transferencia", child: Text("Transferencia Bancaria")),
+                DropdownMenuItem(value: "efectivo", child: Text("Efectivo")),
+              ],
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() {
+                    _pagoMetodo = val;
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 10),
+
+            // Bank and Reference (if not cash)
+            if (_pagoMetodo != 'efectivo') ...[
               DropdownButtonFormField<String>(
-                initialValue: _pagoMetodo,
+                isExpanded: true,
                 dropdownColor: AppTheme.darkCard,
-                decoration: const InputDecoration(labelText: "Método de Pago"),
-                items: const [
-                  DropdownMenuItem(value: "pago_movil", child: Text("Pago Móvil")),
-                  DropdownMenuItem(value: "transferencia", child: Text("Transferencia Bancaria")),
-                  DropdownMenuItem(value: "efectivo", child: Text("Efectivo")),
-                ],
+                decoration: const InputDecoration(labelText: "Banco origen *"),
+                items: widget.bancosVenezuela.entries.map((entry) {
+                  return DropdownMenuItem<String>(
+                    value: entry.key,
+                    child: Text(
+                      entry.value,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  );
+                }).toList(),
                 onChanged: (val) {
                   if (val != null) {
-                    setState(() {
-                      _pagoMetodo = val;
-                    });
+                    _pagoBanco = val;
                   }
-                },
-              ),
-              const SizedBox(height: 10),
-
-              // Bank and Reference (if not cash)
-              if (_pagoMetodo != 'efectivo') ...[
-                DropdownButtonFormField<String>(
-                  dropdownColor: AppTheme.darkCard,
-                  decoration: const InputDecoration(labelText: "Banco origen *"),
-                  items: widget.bancosVenezuela.entries.map((entry) {
-                    return DropdownMenuItem<String>(
-                      value: entry.key,
-                      child: Text(entry.value),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    if (val != null) {
-                      _pagoBanco = val;
-                    }
-                  },
-                  validator: (value) {
-                    if (_pagoMetodo != 'efectivo' && (value == null || value.isEmpty)) {
-                      return "Seleccione el banco.";
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  controller: _referenciaCtrl,
-                  decoration: const InputDecoration(labelText: "Referencia bancaria *"),
-                  validator: (value) {
-                    if (_pagoMetodo != 'efectivo' && (value == null || value.trim().isEmpty)) {
-                      return "Ingrese el número de referencia.";
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 10),
-              ],
-
-              // Amount
-              TextFormField(
-                controller: _montoCtrl,
-                keyboardType: TextInputType.number,
-                readOnly: !widget.isRecharge, // Locked to 15.00 for card request
-                decoration: const InputDecoration(labelText: "Monto a acreditar (\$) *"),
-                onChanged: (value) {
-                  setState(() {
-                    _montoIngresado = double.tryParse(value) ?? 0.0;
-                  });
                 },
                 validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return "Ingrese el monto.";
-                  }
-                  final double? numVal = double.tryParse(value);
-                  if (numVal == null || numVal <= 0) {
-                    return "Ingrese un monto válido mayor a 0.";
+                  if (_pagoMetodo != 'efectivo' && (value == null || value.isEmpty)) {
+                    return "Seleccione el banco.";
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 10),
+              TextFormField(
+                controller: _referenciaCtrl,
+                decoration: const InputDecoration(labelText: "Referencia bancaria *"),
+                validator: (value) {
+                  if (_pagoMetodo != 'efectivo' && (value == null || value.trim().isEmpty)) {
+                    return "Ingrese el número de referencia.";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 10),
+            ],
 
-              // $50 rule real-time preview
-              if (_montoIngresado >= 50.0) ...[
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppTheme.successGreen.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppTheme.successGreen, width: 0.5),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.star, color: AppTheme.primaryGold, size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          "¡Bono VIP del +20% aplicado! Recibirás \$${(_montoIngresado * 1.2).toStringAsFixed(2)} de saldo de crédito.",
-                          style: const TextStyle(
-                            color: AppTheme.successGreen,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
+            // Amount
+            TextFormField(
+              controller: _montoCtrl,
+              keyboardType: TextInputType.number,
+              readOnly: !widget.isRecharge, // Locked to 15.00 for card request
+              decoration: const InputDecoration(labelText: "Monto a acreditar (\$) *"),
+              onChanged: (value) {
+                setState(() {
+                  _montoIngresado = double.tryParse(value) ?? 0.0;
+                });
+              },
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return "Ingrese el monto.";
+                }
+                final double? numVal = double.tryParse(value);
+                if (numVal == null || numVal <= 0) {
+                  return "Ingrese un monto válido mayor a 0.";
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 10),
+
+            // $50 rule real-time preview
+            if (_montoIngresado >= 50.0) ...[
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.successGreen.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppTheme.successGreen, width: 0.5),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.star, color: AppTheme.primaryGold, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        "¡Bono VIP del +20% aplicado! Recibirás \$${(_montoIngresado * 1.2).toStringAsFixed(2)} de saldo de crédito.",
+                        style: const TextStyle(
+                          color: AppTheme.successGreen,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 10),
-              ],
-
-              // Comment / Note
-              TextFormField(
-                controller: _notaCtrl,
-                decoration: const InputDecoration(labelText: "Comentario / Nota (Opcional)"),
-                maxLines: 1,
               ),
+              const SizedBox(height: 10),
             ],
-          ),
+
+            // Comment / Note
+            TextFormField(
+              controller: _notaCtrl,
+              decoration: const InputDecoration(labelText: "Comentario / Nota (Opcional)"),
+              maxLines: 1,
+            ),
+          ],
         ),
       ),
       actions: [
