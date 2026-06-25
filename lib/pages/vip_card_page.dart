@@ -20,6 +20,9 @@ class _VipCardPageState extends State<VipCardPage> {
   List<dynamic> _movements = [];
   String? _errorMessage;
   String? _pendingRechargeMsg;
+  double? _pendingRechargeAmount;
+  String? _pendingRechargeDate;
+  bool _isProcessingReport = false;
 
   static const Map<String, String> _bancosVenezuela = {
     "Banco de Venezuela": "Banco de Venezuela (BDV)",
@@ -50,38 +53,48 @@ class _VipCardPageState extends State<VipCardPage> {
     _initData();
   }
 
-  Future<void> _loadPendingRechargeMsg() async {
+  Future<void> _loadPendingRecharge() async {
     final prefs = await SharedPreferences.getInstance();
     if (mounted) {
       setState(() {
         _pendingRechargeMsg = prefs.getString('pending_vip_recharge_msg');
+        _pendingRechargeAmount = prefs.getDouble('pending_vip_recharge_amount');
+        _pendingRechargeDate = prefs.getString('pending_vip_recharge_date');
       });
     }
   }
 
-  Future<void> _savePendingRechargeMsg(String msg) async {
+  Future<void> _savePendingRecharge(String msg, double amount, String date) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('pending_vip_recharge_msg', msg);
+    await prefs.setDouble('pending_vip_recharge_amount', amount);
+    await prefs.setString('pending_vip_recharge_date', date);
     if (mounted) {
       setState(() {
         _pendingRechargeMsg = msg;
+        _pendingRechargeAmount = amount;
+        _pendingRechargeDate = date;
       });
     }
   }
 
-  Future<void> _clearPendingRechargeMsg() async {
+  Future<void> _clearPendingRecharge() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('pending_vip_recharge_msg');
+    await prefs.remove('pending_vip_recharge_amount');
+    await prefs.remove('pending_vip_recharge_date');
     if (mounted) {
       setState(() {
         _pendingRechargeMsg = null;
+        _pendingRechargeAmount = null;
+        _pendingRechargeDate = null;
       });
     }
   }
 
   Future<void> _initData() async {
     // 1. Load any locally stored pending recharge messages first
-    await _loadPendingRechargeMsg();
+    await _loadPendingRecharge();
     if (!mounted) return;
 
     // 2. If we already have cached VIP card data, load movements immediately
@@ -141,33 +154,89 @@ class _VipCardPageState extends State<VipCardPage> {
 
     // If balance changed, clear any pending recharge message automatically
     if (newBalance != oldBalance) {
-      await _clearPendingRechargeMsg();
+      await _clearPendingRecharge();
     }
   }
 
   /// Opens dialog to submit VIP application or Balance Recharge
-  void _openPaymentDialog({required bool isRecharge}) {
-    showDialog(
+  Future<void> _openPaymentDialog({required bool isRecharge}) async {
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
         return _PaymentReportDialog(
           isRecharge: isRecharge,
           bancosVenezuela: _bancosVenezuela,
-          onSuccess: (isRech, amount) async {
-            if (isRech) {
-              await _savePendingRechargeMsg("Hemos recibido su reporte de recarga por \$${amount.toStringAsFixed(2)}. Su saldo se actualizará una vez conciliado el pago.");
-            }
-            await _refreshProfile();
-            if (!mounted) return;
-            final hasVip = Provider.of<AuthState>(context, listen: false).profile?['tarjeta_vip'] != null;
-            if (hasVip) {
-              _loadMovements();
-            }
-          },
         );
       },
     );
+
+    if (result == null || !mounted) return;
+
+    setState(() {
+      _isProcessingReport = true;
+    });
+
+    final String pagoMetodo = result['metodo'] ?? '';
+    final String pagoBanco = result['banco'] ?? '';
+    final String pagoReferencia = result['referencia'] ?? '';
+    final double amount = result['monto'] ?? 0.0;
+    final String nota = result['nota'] ?? '';
+
+    final apiResult = isRecharge
+        ? await ApiService.recargarTarjetaVip(
+            pagoMetodo: pagoMetodo,
+            pagoBanco: pagoBanco,
+            pagoReferencia: pagoReferencia,
+            pagoMonto: amount,
+            nota: nota,
+          )
+        : await ApiService.solicitarTarjetaVip(
+            pagoMetodo: pagoMetodo,
+            pagoBanco: pagoBanco,
+            pagoReferencia: pagoReferencia,
+            pagoMonto: amount,
+            nota: nota,
+          );
+
+    if (!mounted) return;
+
+    setState(() {
+      _isProcessingReport = false;
+    });
+
+    if (apiResult['success']) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(apiResult['message'] ?? 'Reporte enviado con éxito.'),
+          backgroundColor: AppTheme.successGreen,
+        ),
+      );
+
+      if (isRecharge) {
+        final now = DateTime.now();
+        final formattedDate = "${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+        await _savePendingRecharge(
+          "Hemos recibido su reporte de recarga por \$${amount.toStringAsFixed(2)}. Su saldo se actualizará una vez conciliado el pago.",
+          amount,
+          formattedDate,
+        );
+      }
+
+      await _refreshProfile();
+      if (!mounted) return;
+      final hasVip = Provider.of<AuthState>(context, listen: false).profile?['tarjeta_vip'] != null;
+      if (hasVip) {
+        _loadMovements();
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(apiResult['message'] ?? 'Error al enviar el reporte.'),
+          backgroundColor: AppTheme.alertRed,
+        ),
+      );
+    }
   }
 
   @override
@@ -184,8 +253,12 @@ class _VipCardPageState extends State<VipCardPage> {
         title: const Text("Tarjeta VIP"),
       ),
       body: SafeArea(
-        child: RefreshIndicator(
-          color: AppTheme.primaryGold,
+        child: _isProcessingReport
+            ? const Center(
+                child: Loader(message: "Enviando reporte de pago..."),
+              )
+            : RefreshIndicator(
+                color: AppTheme.primaryGold,
           backgroundColor: AppTheme.darkCard,
           onRefresh: () async {
             await _refreshProfile();
@@ -297,7 +370,7 @@ class _VipCardPageState extends State<VipCardPage> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.close, color: Colors.white60, size: 20),
-                        onPressed: _clearPendingRechargeMsg,
+                        onPressed: _clearPendingRecharge,
                       ),
                     ],
                   ),
@@ -429,7 +502,7 @@ class _VipCardPageState extends State<VipCardPage> {
                               ),
                             ),
                           )
-                        : _movements.isEmpty
+                        : (_movements.isEmpty && _pendingRechargeMsg == null)
                             ? Card(
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(vertical: 35.0, horizontal: 15.0),
@@ -448,49 +521,96 @@ class _VipCardPageState extends State<VipCardPage> {
                                 ),
                               )
                             : Column(
-                                children: _movements.map((move) {
-                                  final double amount = double.tryParse(move['monto']?.toString() ?? '0') ?? 0.00;
-                                  final String type = move['tipo'] ?? 'registro';
-                                  final isAdd = type == 'recarga' || type == 'registro';
+                                children: [
+                                  if (_pendingRechargeMsg != null && _pendingRechargeAmount != null)
+                                    _buildPendingMovementCard(),
+                                  ..._movements.map((move) {
+                                    final double amount = double.tryParse(move['monto']?.toString() ?? '0') ?? 0.00;
+                                    final String type = move['tipo'] ?? 'registro';
+                                    final isAdd = type == 'recarga' || type == 'registro';
 
-                                  return Card(
-                                    margin: const EdgeInsets.only(bottom: 10),
-                                    child: ListTile(
-                                      leading: CircleAvatar(
-                                        backgroundColor: isAdd
-                                            ? AppTheme.successGreen.withValues(alpha: 0.15)
-                                            : AppTheme.alertRed.withValues(alpha: 0.15),
-                                        child: Icon(
-                                          isAdd ? Icons.arrow_downward : Icons.arrow_upward,
-                                          color: isAdd ? AppTheme.successGreen : AppTheme.alertRed,
-                                          size: 18,
+                                    return Card(
+                                      margin: const EdgeInsets.only(bottom: 10),
+                                      child: ListTile(
+                                        leading: CircleAvatar(
+                                          backgroundColor: isAdd
+                                              ? AppTheme.successGreen.withValues(alpha: 0.15)
+                                              : AppTheme.alertRed.withValues(alpha: 0.15),
+                                          child: Icon(
+                                            isAdd ? Icons.arrow_downward : Icons.arrow_upward,
+                                            color: isAdd ? AppTheme.successGreen : AppTheme.alertRed,
+                                            size: 18,
+                                          ),
+                                        ),
+                                        title: Text(
+                                          move['descripcion'] ?? 'Transacción VIP',
+                                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                        ),
+                                        subtitle: Padding(
+                                          padding: const EdgeInsets.only(top: 4.0),
+                                          child: Text(
+                                            move['fecha'] ?? '',
+                                            style: const TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                                          ),
+                                        ),
+                                        trailing: Text(
+                                          "${isAdd ? '+' : '-'}\$${amount.toStringAsFixed(2)}",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: isAdd ? AppTheme.successGreen : AppTheme.alertRed,
+                                          ),
                                         ),
                                       ),
-                                      title: Text(
-                                        move['descripcion'] ?? 'Transacción VIP',
-                                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                                      ),
-                                      subtitle: Padding(
-                                        padding: const EdgeInsets.only(top: 4.0),
-                                        child: Text(
-                                          move['fecha'] ?? '',
-                                          style: const TextStyle(fontSize: 10, color: AppTheme.textMuted),
-                                        ),
-                                      ),
-                                      trailing: Text(
-                                        "${isAdd ? '+' : '-'}\$${amount.toStringAsFixed(2)}",
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                          color: isAdd ? AppTheme.successGreen : AppTheme.alertRed,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
+                                    );
+                                  }),
+                                ],
                               ),
               ]
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPendingMovementCard() {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: AppTheme.primaryGold.withValues(alpha: 0.5),
+          width: 1.0,
+        ),
+      ),
+      color: AppTheme.primaryGold.withValues(alpha: 0.05),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: AppTheme.primaryGold.withValues(alpha: 0.15),
+          child: const Icon(
+            Icons.hourglass_empty,
+            color: AppTheme.primaryGold,
+            size: 18,
+          ),
+        ),
+        title: const Text(
+          "Recarga de Saldo (En proceso)",
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4.0),
+          child: Text(
+            "Pendiente de verificación • ${_pendingRechargeDate ?? ''}",
+            style: const TextStyle(fontSize: 10, color: AppTheme.textMuted),
+          ),
+        ),
+        trailing: Text(
+          "+\$${_pendingRechargeAmount?.toStringAsFixed(2) ?? '0.00'}",
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: AppTheme.primaryGold,
           ),
         ),
       ),
@@ -820,12 +940,10 @@ class _VipCardPageState extends State<VipCardPage> {
 class _PaymentReportDialog extends StatefulWidget {
   final bool isRecharge;
   final Map<String, String> bancosVenezuela;
-  final Function(bool isRecharge, double amount) onSuccess;
 
   const _PaymentReportDialog({
     required this.isRecharge,
     required this.bancosVenezuela,
-    required this.onSuccess,
   });
 
   @override
@@ -834,7 +952,6 @@ class _PaymentReportDialog extends StatefulWidget {
 
 class _PaymentReportDialogState extends State<_PaymentReportDialog> {
   final _formKey = GlobalKey<FormState>();
-  bool _isLoadingSubmit = false;
 
   String _pagoMetodo = "pago_movil";
   String _pagoBanco = "";
@@ -859,57 +976,17 @@ class _PaymentReportDialogState extends State<_PaymentReportDialog> {
     super.dispose();
   }
 
-  Future<void> _submitReport() async {
+  void _submitReport() {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoadingSubmit = true;
-    });
-
     final double amount = double.tryParse(_montoCtrl.text) ?? 0.00;
-
-    final result = widget.isRecharge
-        ? await ApiService.recargarTarjetaVip(
-            pagoMetodo: _pagoMetodo,
-            pagoBanco: _pagoMetodo == 'efectivo' ? '' : _pagoBanco,
-            pagoReferencia: _pagoMetodo == 'efectivo' ? '' : _referenciaCtrl.text.trim(),
-            pagoMonto: amount,
-            nota: _notaCtrl.text.trim(),
-          )
-        : await ApiService.solicitarTarjetaVip(
-            pagoMetodo: _pagoMetodo,
-            pagoBanco: _pagoMetodo == 'efectivo' ? '' : _pagoBanco,
-            pagoReferencia: _pagoMetodo == 'efectivo' ? '' : _referenciaCtrl.text.trim(),
-            pagoMonto: amount,
-            nota: _notaCtrl.text.trim(),
-          );
-
-    if (!mounted) return;
-
-    if (result['success']) {
-      setState(() {
-        _isLoadingSubmit = false;
-      });
-      Navigator.pop(context); // Close dialog
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: AppTheme.successGreen,
-        ),
-      );
-      widget.onSuccess(widget.isRecharge, amount);
-    } else {
-      setState(() {
-        _isLoadingSubmit = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: AppTheme.alertRed,
-        ),
-      );
-    }
+    Navigator.pop(context, {
+      'metodo': _pagoMetodo,
+      'banco': _pagoMetodo == 'efectivo' ? '' : _pagoBanco,
+      'referencia': _pagoMetodo == 'efectivo' ? '' : _referenciaCtrl.text.trim(),
+      'monto': amount,
+      'nota': _notaCtrl.text.trim(),
+    });
   }
 
   @override
@@ -1064,7 +1141,7 @@ class _PaymentReportDialogState extends State<_PaymentReportDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _isLoadingSubmit ? null : () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context),
           child: const Text("Cancelar", style: TextStyle(color: Colors.white70)),
         ),
         ElevatedButton(
@@ -1073,14 +1150,8 @@ class _PaymentReportDialogState extends State<_PaymentReportDialog> {
             foregroundColor: Colors.black,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
-          onPressed: _isLoadingSubmit ? null : _submitReport,
-          child: _isLoadingSubmit
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                )
-              : const Text("Enviar Reporte", style: TextStyle(fontWeight: FontWeight.bold)),
+          onPressed: _submitReport,
+          child: const Text("Enviar Reporte", style: TextStyle(fontWeight: FontWeight.bold)),
         ),
       ],
     );
