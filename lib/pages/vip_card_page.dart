@@ -197,6 +197,7 @@ class _VipCardPageState extends State<VipCardPage> {
             children: [
               // 1. STUNNING VIRTUAL GOLDEN VIP CARD
               _buildVirtualCard(
+                profile: profile,
                 vipCard: vipCard,
                 hasPending: hasPending,
                 hasVip: hasVip,
@@ -444,6 +445,7 @@ class _VipCardPageState extends State<VipCardPage> {
 
   /// Builds the 3D-effect looking golden virtual membership card
   Widget _buildVirtualCard({
+    required Map<String, dynamic> profile,
     required dynamic vipCard,
     required bool hasPending,
     required bool hasVip,
@@ -463,6 +465,11 @@ class _VipCardPageState extends State<VipCardPage> {
     }
 
     final double cardBalance = hasVip ? (double.tryParse(vipCard['saldo']?.toString() ?? '0') ?? 0.00) : 0.00;
+
+    // Retrieve card/client serial number (e.g. 00001)
+    final int rawId = int.tryParse(vipCard?['id']?.toString() ?? '') ?? 
+                      int.tryParse(profile['id']?.toString() ?? '') ?? 1;
+    final String cardSerial = rawId.toString().padLeft(5, '0');
 
     return Container(
       height: 220,
@@ -492,182 +499,232 @@ class _VipCardPageState extends State<VipCardPage> {
               ),
             ),
 
-            // Top Body Content (approx 75% height)
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // 1. Top Left: VIP Brand and Status badge
+            Positioned(
+              top: 20,
+              left: 20,
+              child: Row(
                 children: [
-                  // VIP Star and Logo Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // VIP Star Brand
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "★ VIP ★",
-                            style: GoogleFonts.cinzel(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFFD4AF37),
-                              letterSpacing: 2,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            height: 1.5,
-                            width: 65,
-                            color: const Color(0xFFD4AF37),
-                          ),
-                        ],
-                      ),
-
-                      // Logo VE VILLA EVENTOS
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Gold Box VE
-                          Container(
-                            width: 34,
-                            height: 34,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(6),
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFD4AF37), Color(0xFFF3E5AB), Color(0xFFAA7C11)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                            ),
-                            child: const Center(
-                              child: Text(
-                                "VE",
-                                style: TextStyle(
-                                  fontFamily: 'serif',
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // VILLA EVENTOS Text
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "VILLA",
-                                style: GoogleFonts.cinzel(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFFD4AF37),
-                                  height: 0.9,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                              Text(
-                                "EVENTOS",
-                                style: GoogleFonts.cinzel(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFFD4AF37),
-                                  height: 0.9,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-
-                  // Chip & NFC Icons Row
-                  Row(
-                    children: [
-                      // Chip Icon graphic
-                      Container(
-                        width: 44,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(6),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFE5C060), Color(0xFFC59E3F)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          border: Border.all(color: Colors.black38, width: 0.5),
-                        ),
-                        child: GridView.count(
-                          crossAxisCount: 3,
-                          physics: const NeverScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(2),
-                          children: List.generate(
-                            6,
-                            (index) => Container(
-                              margin: const EdgeInsets.all(1),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.black26, width: 0.3),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      // NFC indicator
-                      const Icon(Icons.sensors, color: Colors.white60, size: 20),
-                    ],
-                  ),
-                  const Spacer(),
-
-                  // Card Number and Balance preview
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
                       Text(
-                        cardCode,
-                        style: GoogleFonts.robotoMono(
-                          fontSize: 16,
-                          color: Colors.white70,
-                          letterSpacing: 1.5,
+                        "★ VIP ★",
+                        style: GoogleFonts.cinzel(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFD4AF37),
+                          letterSpacing: 2,
                         ),
                       ),
-                      // Active/Locked Status badge
-                      if (hasVip)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: vipCard['estatus'] == 1
-                                ? AppTheme.successGreen.withValues(alpha: 0.15)
-                                : AppTheme.alertRed.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(
-                              color: vipCard['estatus'] == 1 ? AppTheme.successGreen : AppTheme.alertRed,
-                              width: 0.5,
-                            ),
-                          ),
-                          child: Text(
-                            vipCard['estatus'] == 1 ? "ACTIVA" : "BLOQUEADA",
-                            style: TextStyle(
-                              color: vipCard['estatus'] == 1 ? AppTheme.successGreen : AppTheme.alertRed,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
+                      const SizedBox(height: 4),
+                      Container(
+                        height: 1.5,
+                        width: 65,
+                        color: const Color(0xFFD4AF37),
+                      ),
                     ],
                   ),
-                  // Space for the footer
-                  const SizedBox(height: 38),
+                  const SizedBox(width: 15),
+                  if (hasVip) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: vipCard['estatus'] == 1
+                            ? AppTheme.successGreen.withValues(alpha: 0.15)
+                            : AppTheme.alertRed.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: vipCard['estatus'] == 1 ? AppTheme.successGreen : AppTheme.alertRed,
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Text(
+                        vipCard['estatus'] == 1 ? "ACTIVA" : "BLOQUEADA",
+                        style: TextStyle(
+                          color: vipCard['estatus'] == 1 ? AppTheme.successGreen : AppTheme.alertRed,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
 
-            // Gold Footer Bar (approx 25% height)
+            // 2. Top Right: Gold serial capsule (00001)
+            Positioned(
+              top: 18,
+              right: 20,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFD4AF37), Color(0xFFF3E5AB), Color(0xFFAA7C11)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  border: Border.all(color: Colors.black45, width: 0.5),
+                ),
+                child: Text(
+                  cardSerial,
+                  style: GoogleFonts.robotoMono(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+            ),
+
+            // 3. Middle Left: Chip and Contactless indicator
+            Positioned(
+              top: 78,
+              left: 20,
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(6),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFE5C060), Color(0xFFC59E3F)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      border: Border.all(color: Colors.black38, width: 0.5),
+                    ),
+                    child: GridView.count(
+                      crossAxisCount: 3,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(2),
+                      children: List.generate(
+                        6,
+                        (index) => Container(
+                          margin: const EdgeInsets.all(1),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.black26, width: 0.3),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.sensors, color: Colors.white70, size: 18),
+                ],
+              ),
+            ),
+
+            // 4. Middle Right: Logo VE VILLA EVENTOS
+            Positioned(
+              top: 72,
+              right: 20,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Gold Box VE
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(6),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFD4AF37), Color(0xFFF3E5AB), Color(0xFFAA7C11)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        "VE",
+                        style: TextStyle(
+                          fontFamily: 'serif',
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // VILLA EVENTOS Text
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "VILLA",
+                        style: GoogleFonts.cinzel(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFD4AF37),
+                          height: 0.9,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      Text(
+                        "EVENTOS",
+                        style: GoogleFonts.cinzel(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFD4AF37),
+                          height: 0.9,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // 5. Bottom Section: Card Number and SALDO VIP Row
+            Positioned(
+              top: 132,
+              left: 20,
+              right: 20,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    cardCode,
+                    style: GoogleFonts.robotoMono(
+                      fontSize: 16,
+                      color: Colors.white70,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  // SALDO VIP display
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text(
+                        "SALDO VIP",
+                        style: TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white70,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                      Text(
+                        "\$${cardBalance.toStringAsFixed(2)}",
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // 6. Gold Footer Bar
             Positioned(
               bottom: 0,
               left: 0,
@@ -703,7 +760,7 @@ class _VipCardPageState extends State<VipCardPage> {
               ),
             ),
 
-            // QR Code Overlapping both footer and body
+            // 7. QR Code Overlapping both footer and body
             Positioned(
               bottom: 8,
               right: 20,
@@ -727,34 +784,6 @@ class _VipCardPageState extends State<VipCardPage> {
                   color: Colors.black,
                   size: 52,
                 ),
-              ),
-            ),
-
-            // Balance Display overlay (placed floating on card top right, below logo)
-            Positioned(
-              top: 75,
-              right: 20,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text(
-                    "SALDO VIP",
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white70,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  Text(
-                    "\$${cardBalance.toStringAsFixed(2)}",
-                    style: GoogleFonts.inter(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
               ),
             ),
           ],
