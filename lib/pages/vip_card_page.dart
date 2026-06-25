@@ -681,44 +681,42 @@ class _VipCardPageState extends State<VipCardPage> {
               ),
             ),
 
-            // 5. Bottom Section: Card Number and SALDO VIP Row
+            // 5. Bottom Section: Card Number and SALDO VIP (Separated to prevent overlapping the QR code)
+            Positioned(
+              top: 138,
+              left: 20,
+              child: Text(
+                cardCode,
+                style: GoogleFonts.robotoMono(
+                  fontSize: 16,
+                  color: Colors.white70,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ),
+
             Positioned(
               top: 132,
-              left: 20,
-              right: 20,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              right: 90, // Placed safely to the left of the overlapping QR code
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    cardCode,
-                    style: GoogleFonts.robotoMono(
-                      fontSize: 16,
+                  const Text(
+                    "SALDO VIP",
+                    style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
                       color: Colors.white70,
-                      letterSpacing: 1.5,
+                      letterSpacing: 1.0,
                     ),
                   ),
-                  // SALDO VIP display
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text(
-                        "SALDO VIP",
-                        style: TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white70,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
-                      Text(
-                        "\$${cardBalance.toStringAsFixed(2)}",
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    "\$${cardBalance.toStringAsFixed(2)}",
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
                   ),
                 ],
               ),
