@@ -294,6 +294,35 @@ class ApiService {
     }
   }
 
+  /// Delete Customer Account (POST /api/index.php?route=cliente-eliminar)
+  static Future<Map<String, dynamic>> eliminarCuentaCliente() async {
+    final baseUrl = await getBaseUrl();
+    final url = Uri.parse("$baseUrl?route=cliente-eliminar");
+    final token = await getToken();
+
+    if (token == null) {
+      return {"success": false, "message": "No hay token local."};
+    }
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token"
+        },
+      );
+
+      final result = jsonDecode(response.body);
+      if (response.statusCode == 200 && result['status'] == 'success') {
+        return {"success": true, "message": result['message']};
+      }
+      return {"success": false, "message": result['message'] ?? "Error al eliminar la cuenta."};
+    } catch (e) {
+      return {"success": false, "message": "Error de conexión: $e"};
+    }
+  }
+
   /// Submit Customer Delivery Order (POST /api/index.php?route=cliente-pedido)
   static Future<Map<String, dynamic>> submitClientOrder({
     required String metodo,

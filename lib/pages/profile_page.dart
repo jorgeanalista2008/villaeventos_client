@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../core/providers/auth_state.dart';
 import '../core/providers/cart_state.dart';
+import '../core/api/api_service.dart';
 import '../components/atoms/gold_button.dart';
 import 'vip_card_page.dart';
 
@@ -152,10 +153,162 @@ class ProfilePage extends StatelessWidget {
                   );
                 },
               ),
+              const SizedBox(height: 15),
+
+              // Delete Account Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.alertRed,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: AppTheme.alertRed.withValues(alpha: 0.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 2,
+                  ),
+                  onPressed: () => _showDeleteAccountDialog(context, authState),
+                  icon: const Icon(Icons.delete_forever, size: 18, color: Colors.white),
+                  label: const Text(
+                    "Eliminar Cuenta",
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context, AuthState authState) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        bool isLoading = false;
+        return StatefulBuilder(
+          builder: (dialogStateContext, dialogSetState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+                side: const BorderSide(color: AppTheme.alertRed, width: 1.5),
+              ),
+              title: const Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: AppTheme.alertRed),
+                  SizedBox(width: 8),
+                  Text("Eliminar Cuenta", style: TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+              content: isLoading
+                  ? const SizedBox(
+                      height: 100,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(color: AppTheme.alertRed),
+                            SizedBox(height: 15),
+                            Text("Eliminando cuenta...", style: TextStyle(fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                    )
+                  : const SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Esta acción es irreversible y realizará las siguientes acciones en el sistema:",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                            "• Se deshabilitará permanentemente su acceso a la aplicación.\n"
+                            "• Sus datos personales (nombre, teléfono, correo y coordenadas) serán anonimizados de inmediato.\n"
+                            "• Si posee una Tarjeta VIP, esta será invalidada y su saldo acumulado se restablecerá a \$0.00.\n"
+                            "• Sus pedidos históricos se mantendrán únicamente con fines estadísticos vinculados a un usuario anónimo.",
+                            style: TextStyle(fontSize: 12, height: 1.4, color: Colors.white70),
+                          ),
+                          SizedBox(height: 15),
+                          Text(
+                            "¿Está totalmente seguro de que desea eliminar su cuenta y todos sus beneficios VIP?",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.alertRed),
+                          ),
+                        ],
+                      ),
+                    ),
+              actions: isLoading
+                  ? null
+                  : [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: const Text("Cancelar"),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          dialogSetState(() {
+                            isLoading = true;
+                          });
+
+                          // Call account deletion API
+                          final result = await ApiService.eliminarCuentaCliente();
+
+                          if (!dialogContext.mounted) return;
+
+                          if (result['success']) {
+                            Navigator.pop(dialogContext); // close dialog
+                            
+                            if (context.mounted) {
+                              Navigator.pop(context); // close profile page
+                              
+                              // Clear session and logout locally
+                              await authState.logout();
+                              
+                              if (context.mounted) {
+                                Provider.of<CartState>(context, listen: false).clearCart();
+                                
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(result['message'] ?? "Cuenta de cliente dada de baja con éxito."),
+                                    backgroundColor: AppTheme.successGreen,
+                                    duration: const Duration(seconds: 4),
+                                  ),
+                                );
+                              }
+                            }
+                            
+                            // Exit application
+                            await SystemNavigator.pop();
+                          } else {
+                            dialogSetState(() {
+                              isLoading = false;
+                            });
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(result['message'] ?? "Error al procesar la baja de la cuenta."),
+                                  backgroundColor: AppTheme.alertRed,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        child: const Text("Sí, Eliminar Cuenta", style: TextStyle(color: AppTheme.alertRed)),
+                      ),
+                    ],
+            );
+          },
+        );
+      },
     );
   }
 

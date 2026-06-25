@@ -35,6 +35,10 @@ Esta aplicación se conecta con la API REST del backend administrativo desarroll
   - Listado histórico de transacciones y movimientos VIP (aperturas, recargas y consumos).
 * **Recuperación de Contraseña en 3 Pasos:**
   - Flujo de restablecimiento público de contraseña: Enviar solicitud de código SMTP -> Verificar código OTP de 6 dígitos -> Registrar nueva contraseña de acceso.
+* **Auto-eliminación y Anonimización de Cuenta (Softdelete):**
+  - Botón integrado en el perfil del cliente para dar de baja la cuenta de forma permanente.
+  - Diálogo de confirmación con advertencias explícitas sobre las implicaciones de baja (anonimización GDPR de datos personales e invalidación de beneficios y saldo VIP).
+  - Cierre automático de sesión local (limpieza de tokens y carrito) y salida limpia de la aplicación en caliente tras la confirmación exitosa.
 
 ---
 
