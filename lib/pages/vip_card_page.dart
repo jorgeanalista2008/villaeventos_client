@@ -177,6 +177,7 @@ class _VipCardPageState extends State<VipCardPage> {
     final vipCard = profile['tarjeta_vip'];
     final bool hasPending = profile['tiene_vip_pendiente'] == true;
     final bool hasVip = vipCard != null;
+    final double cardBalance = hasVip ? (double.tryParse(vipCard['saldo']?.toString() ?? '0') ?? 0.00) : 0.00;
 
     return Scaffold(
       appBar: AppBar(
@@ -204,6 +205,59 @@ class _VipCardPageState extends State<VipCardPage> {
                 clientName: profile['nombre'] ?? 'Cliente VIP',
               ),
               const SizedBox(height: 25),
+
+              // VIP Balance Card (Visible outside the card, premium styling)
+              if (hasVip) ...[
+                Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    side: const BorderSide(color: AppTheme.primaryGold, width: 1.0),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      children: [
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.account_balance_wallet_outlined, color: AppTheme.primaryGold, size: 22),
+                            SizedBox(width: 8),
+                            Text(
+                              "SALDO DISPONIBLE VIP",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primaryGold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          "\$${cardBalance.toStringAsFixed(2)}",
+                          style: GoogleFonts.inter(
+                            fontSize: 34,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          "Este saldo será deducido automáticamente de sus pedidos",
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.textMuted,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 25),
+              ],
 
               // Pending Recharge Message Banner
               if (_pendingRechargeMsg != null && hasVip) ...[
@@ -464,8 +518,6 @@ class _VipCardPageState extends State<VipCardPage> {
       cardCode = "EN CONCILIACIÓN";
     }
 
-    final double cardBalance = hasVip ? (double.tryParse(vipCard['saldo']?.toString() ?? '0') ?? 0.00) : 0.00;
-
     // Retrieve card/client serial number (e.g. 00001)
     final int rawId = int.tryParse(vipCard?['id']?.toString() ?? '') ?? 
                       int.tryParse(profile['id']?.toString() ?? '') ?? 1;
@@ -681,7 +733,7 @@ class _VipCardPageState extends State<VipCardPage> {
               ),
             ),
 
-            // 5. Bottom Section: Card Number and SALDO VIP (Separated to prevent overlapping the QR code)
+            // 5. Bottom Section: Card Number
             Positioned(
               top: 138,
               left: 20,
@@ -692,33 +744,6 @@ class _VipCardPageState extends State<VipCardPage> {
                   color: Colors.white70,
                   letterSpacing: 1.5,
                 ),
-              ),
-            ),
-
-            Positioned(
-              top: 132,
-              right: 90, // Placed safely to the left of the overlapping QR code
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text(
-                    "SALDO VIP",
-                    style: TextStyle(
-                      fontSize: 8,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white70,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                  Text(
-                    "\$${cardBalance.toStringAsFixed(2)}",
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
               ),
             ),
 
