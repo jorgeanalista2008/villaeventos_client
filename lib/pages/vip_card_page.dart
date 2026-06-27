@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/theme/app_theme.dart';
 import '../core/providers/auth_state.dart';
+import '../core/providers/connectivity_provider.dart';
 import '../core/api/api_service.dart';
 import '../components/atoms/gold_button.dart';
 import '../components/atoms/loader.dart';
@@ -241,6 +242,7 @@ class _VipCardPageState extends State<VipCardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isConnected = Provider.of<ConnectivityProvider>(context).isConnected;
     final authState = Provider.of<AuthState>(context);
     final profile = authState.profile ?? {};
     final vipCard = profile['tarjeta_vip'];
@@ -402,9 +404,9 @@ class _VipCardPageState extends State<VipCardPage> {
                         ),
                         const SizedBox(height: 20),
                         GoldButton(
-                          label: "Solicitar Tarjeta VIP",
+                          label: isConnected ? "Solicitar Tarjeta VIP" : "Sin conexión",
                           icon: Icons.card_membership,
-                          onPressed: () => _openPaymentDialog(isRecharge: false),
+                          onPressed: isConnected ? () => _openPaymentDialog(isRecharge: false) : null,
                         ),
                       ],
                     ),
@@ -454,10 +456,11 @@ class _VipCardPageState extends State<VipCardPage> {
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
+                          disabledBackgroundColor: AppTheme.primaryGold.withValues(alpha: 0.5),
                         ),
-                        onPressed: () => _openPaymentDialog(isRecharge: true),
+                        onPressed: isConnected ? () => _openPaymentDialog(isRecharge: true) : null,
                         icon: const Icon(Icons.add_card, color: Colors.black),
-                        label: const Text("Recargar Saldo", style: TextStyle(fontWeight: FontWeight.bold)),
+                        label: Text(isConnected ? "Recargar Saldo" : "Sin conexión", style: const TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],
@@ -991,6 +994,7 @@ class _PaymentReportDialogState extends State<_PaymentReportDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isConnected = Provider.of<ConnectivityProvider>(context).isConnected;
     return AlertDialog(
       scrollable: true,
       backgroundColor: AppTheme.darkCard,
@@ -1148,10 +1152,11 @@ class _PaymentReportDialogState extends State<_PaymentReportDialog> {
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.primaryGold,
             foregroundColor: Colors.black,
+            disabledBackgroundColor: AppTheme.primaryGold.withValues(alpha: 0.5),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
-          onPressed: _submitReport,
-          child: const Text("Enviar Reporte", style: TextStyle(fontWeight: FontWeight.bold)),
+          onPressed: isConnected ? _submitReport : null,
+          child: Text(isConnected ? "Enviar Reporte" : "Sin conexión", style: const TextStyle(fontWeight: FontWeight.bold)),
         ),
       ],
     );

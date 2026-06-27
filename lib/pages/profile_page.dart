@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../core/providers/auth_state.dart';
 import '../core/providers/cart_state.dart';
+import '../core/providers/connectivity_provider.dart';
 import '../core/api/api_service.dart';
 import '../components/atoms/gold_button.dart';
 import 'vip_card_page.dart';
@@ -13,6 +14,7 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isConnected = Provider.of<ConnectivityProvider>(context).isConnected;
     final authState = Provider.of<AuthState>(context);
     final profile = authState.profile ?? {};
 
@@ -169,11 +171,11 @@ class ProfilePage extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     elevation: 2,
                   ),
-                  onPressed: () => _showDeleteAccountDialog(context, authState),
+                  onPressed: isConnected ? () => _showDeleteAccountDialog(context, authState) : null,
                   icon: const Icon(Icons.delete_forever, size: 18, color: Colors.white),
-                  label: const Text(
-                    "Eliminar Cuenta",
-                    style: TextStyle(
+                  label: Text(
+                    isConnected ? "Eliminar Cuenta" : "Sin conexión",
+                    style: const TextStyle(
                       fontFamily: 'Inter',
                       fontWeight: FontWeight.bold,
                       fontSize: 15,

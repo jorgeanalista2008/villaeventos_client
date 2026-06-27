@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import '../core/theme/app_theme.dart';
 import '../core/providers/auth_state.dart';
+import '../core/providers/connectivity_provider.dart';
 import '../components/atoms/gold_button.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -285,11 +286,12 @@ class _RegisterPageState extends State<RegisterPage> {
                 // Register Action
                 Consumer<AuthState>(
                   builder: (context, auth, child) {
+                    final isConnected = Provider.of<ConnectivityProvider>(context).isConnected;
                     return GoldButton(
-                      label: "Registrarse",
+                      label: isConnected ? "Registrarse" : "Sin conexión",
                       isLoading: auth.isLoading,
                       icon: Icons.app_registration,
-                      onPressed: () async {
+                      onPressed: isConnected ? () async {
                         if (_formKey.currentState!.validate()) {
                           final result = await auth.register(
                             nombre: _nombreController.text.trim(),
@@ -320,7 +322,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             );
                           }
                         }
-                      },
+                      } : null,
                     );
                   },
                 ),

@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import '../core/theme/app_theme.dart';
 import '../core/providers/auth_state.dart';
 import '../core/providers/cart_state.dart';
+import '../core/providers/connectivity_provider.dart';
 import '../core/api/api_service.dart';
 import '../components/atoms/loader.dart';
 import '../components/atoms/gold_button.dart';
@@ -340,6 +341,7 @@ class _CartBottomSheetContentState extends State<_CartBottomSheetContent> {
 
   @override
   Widget build(BuildContext context) {
+    final isConnected = Provider.of<ConnectivityProvider>(context).isConnected;
     return Container(
       decoration: const BoxDecoration(
         color: AppTheme.darkCard,
@@ -690,10 +692,10 @@ class _CartBottomSheetContentState extends State<_CartBottomSheetContent> {
                 const SizedBox(height: 10),
                 
                 GoldButton(
-                  label: "Confirmar y Enviar Pedido",
+                  label: isConnected ? "Confirmar y Enviar Pedido" : "Sin conexión",
                   icon: Icons.send,
                   isLoading: cart.isLoading,
-                  onPressed: () async {
+                  onPressed: isConnected ? () async {
                     if (_formKey.currentState!.validate()) {
                       if (cart.metodo == 'delivery' && (cart.latitud.isEmpty || cart.longitud.isEmpty)) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -730,7 +732,7 @@ class _CartBottomSheetContentState extends State<_CartBottomSheetContent> {
                         );
                       }
                     }
-                  },
+                  } : null,
                 ),
               ],
             ),

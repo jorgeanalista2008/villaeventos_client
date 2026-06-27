@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/theme/app_theme.dart';
 import '../core/api/api_service.dart';
+import '../core/providers/connectivity_provider.dart';
+import 'package:provider/provider.dart';
 import '../components/atoms/gold_button.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -147,6 +149,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isConnected = Provider.of<ConnectivityProvider>(context).isConnected;
     return Scaffold(
       appBar: AppBar(
         title: const Text("Recuperar Cuenta"),
@@ -221,10 +224,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     ),
                     const SizedBox(height: 30),
                     GoldButton(
-                      label: "Enviar Código",
+                      label: isConnected ? "Enviar Código" : "Sin conexión",
                       icon: Icons.send_rounded,
                       isLoading: _isLoading,
-                      onPressed: _submitRequest,
+                      onPressed: isConnected ? _submitRequest : null,
                     ),
                   ] else if (_currentStep == 2) ...[
                     // Step 2: Verification Code Input
@@ -247,10 +250,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     ),
                     const SizedBox(height: 30),
                     GoldButton(
-                      label: "Verificar Código",
+                      label: isConnected ? "Verificar Código" : "Sin conexión",
                       icon: Icons.verified_user_outlined,
                       isLoading: _isLoading,
-                      onPressed: _submitVerify,
+                      onPressed: isConnected ? _submitVerify : null,
                     ),
                     const SizedBox(height: 15),
                     TextButton(
@@ -300,10 +303,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     ),
                     const SizedBox(height: 30),
                     GoldButton(
-                      label: "Restablecer Contraseña",
+                      label: isConnected ? "Restablecer Contraseña" : "Sin conexión",
                       icon: Icons.save_alt_rounded,
                       isLoading: _isLoading,
-                      onPressed: _submitReset,
+                      onPressed: isConnected ? _submitReset : null,
                     ),
                   ],
                 ],

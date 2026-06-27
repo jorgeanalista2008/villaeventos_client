@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../core/providers/auth_state.dart';
 import '../core/providers/cart_state.dart';
+import '../core/providers/connectivity_provider.dart';
 import '../components/atoms/gold_button.dart';
 import 'register_page.dart';
 import 'menu_page.dart';
@@ -363,11 +364,12 @@ class _LoginPageState extends State<LoginPage> {
                       // Submit button
                       Consumer<AuthState>(
                         builder: (context, auth, child) {
+                          final isConnected = Provider.of<ConnectivityProvider>(context).isConnected;
                           return GoldButton(
-                            label: "Ingresar",
+                            label: isConnected ? "Ingresar" : "Sin conexión",
                             isLoading: auth.isLoading,
                             icon: Icons.login,
-                            onPressed: () async {
+                            onPressed: isConnected ? () async {
                               if (_formKey.currentState!.validate()) {
                                 final email = _emailController.text.trim();
                                 final pass = _passwordController.text.trim();
@@ -398,7 +400,7 @@ class _LoginPageState extends State<LoginPage> {
                                   );
                                 }
                               }
-                            },
+                            } : null,
                           );
                         },
                       ),

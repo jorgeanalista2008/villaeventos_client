@@ -69,7 +69,7 @@ class ApiService {
       }
       return {"success": false, "message": result['message'] ?? "Error de autenticación."};
     } catch (e) {
-      return {"success": false, "message": "No se pudo conectar al servidor: $e"};
+      return _handleError(e);
     }
   }
 
@@ -160,7 +160,7 @@ class ApiService {
       }
       return {"success": false, "message": result['message'] ?? "Error al enviar el pedido."};
     } catch (e) {
-      return {"success": false, "message": "Error de conexión: $e"};
+      return _handleError(e);
     }
   }
 
@@ -237,7 +237,7 @@ class ApiService {
       }
       return {"success": false, "message": result['message'] ?? "Error de registro."};
     } catch (e) {
-      return {"success": false, "message": "No se pudo conectar al servidor: $e"};
+      return _handleError(e);
     }
   }
 
@@ -261,7 +261,7 @@ class ApiService {
       }
       return {"success": false, "message": result['message'] ?? "Error de inicio de sesión."};
     } catch (e) {
-      return {"success": false, "message": "No se pudo conectar al servidor: $e"};
+      return _handleError(e);
     }
   }
 
@@ -290,7 +290,7 @@ class ApiService {
       }
       return {"success": false, "message": result['message'] ?? "Error al obtener perfil."};
     } catch (e) {
-      return {"success": false, "message": "Error de conexión: $e"};
+      return _handleError(e);
     }
   }
 
@@ -319,7 +319,7 @@ class ApiService {
       }
       return {"success": false, "message": result['message'] ?? "Error al eliminar la cuenta."};
     } catch (e) {
-      return {"success": false, "message": "Error de conexión: $e"};
+      return _handleError(e);
     }
   }
 
@@ -382,7 +382,7 @@ class ApiService {
       }
       return {"success": false, "message": result['message'] ?? "Error al crear pedido."};
     } catch (e) {
-      return {"success": false, "message": "Error de conexión: $e"};
+      return _handleError(e);
     }
   }
 
@@ -460,7 +460,7 @@ class ApiService {
       }
       return {"success": false, "message": result['message'] ?? "Error al solicitar tarjeta VIP."};
     } catch (e) {
-      return {"success": false, "message": "Error de conexión: $e"};
+      return _handleError(e);
     }
   }
 
@@ -538,7 +538,7 @@ class ApiService {
       }
       return {"success": false, "message": result['message'] ?? "Error al recargar tarjeta VIP."};
     } catch (e) {
-      return {"success": false, "message": "Error de conexión: $e"};
+      return _handleError(e);
     }
   }
 
@@ -560,7 +560,7 @@ class ApiService {
       }
       return {"success": false, "message": result['message'] ?? "Error al solicitar código."};
     } catch (e) {
-      return {"success": false, "message": "Error de conexión: $e"};
+      return _handleError(e);
     }
   }
 
@@ -582,7 +582,7 @@ class ApiService {
       }
       return {"success": false, "message": result['message'] ?? "Código de verificación incorrecto."};
     } catch (e) {
-      return {"success": false, "message": "Error de conexión: $e"};
+      return _handleError(e);
     }
   }
 
@@ -604,8 +604,14 @@ class ApiService {
       }
       return {"success": false, "message": result['message'] ?? "Error al restablecer la contraseña."};
     } catch (e) {
-      return {"success": false, "message": "Error de conexión: $e"};
+      return _handleError(e);
     }
   }
-}
 
+  static Map<String, dynamic> _handleError(dynamic e) {
+    return {
+      "success": false,
+      "message": "No se pudo establecer conexión con el servidor. Por favor, verifique su conexión a Internet."
+    };
+  }
+}
